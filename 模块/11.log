@@ -1,0 +1,25 @@
+
+2024-07-11 20:18:05,041 - 日志.py[line:10] - INFO: 这是 loggging info message
+2024-07-11 20:18:05,041 - 日志.py[line:12] - WARNING: 这是 loggging a warning message
+2024-07-11 20:18:05,041 - 日志.py[line:13] - ERROR: 这是 an loggging error message
+2024-07-11 20:18:05,041 - 日志.py[line:14] - CRITICAL: 这是 loggging critical message
+2024-07-11 20:18:05,042 - 日志.py[line:38] - INFO: 这是 logger info message
+2024-07-11 20:18:05,042 - 日志.py[line:39] - WARNING: 这是 logger warning message
+2024-07-11 20:18:05,044 - 日志.py[line:40] - ERROR: 这是 logger error message 
+2024-07-11 20:18:05,044 - 日志.py[line:41] - CRITICAL: 这是 logger critical message
+2024-07-15 14:52:15,498 - 日志.py[line:10] - INFO: 这是 loggging info message
+2024-07-15 14:52:15,499 - 日志.py[line:12] - WARNING: 这是 loggging a warning message
+2024-07-15 14:52:15,499 - 日志.py[line:13] - ERROR: 这是 an loggging error message
+2024-07-15 14:52:15,499 - 日志.py[line:14] - CRITICAL: 这是 loggging critical message
+2024-07-15 14:52:15,499 - 日志.py[line:38] - INFO: 这是 logger info message
+2024-07-15 14:52:15,500 - 日志.py[line:39] - WARNING: 这是 logger warning message
+2024-07-15 14:52:15,500 - 日志.py[line:40] - ERROR: 这是 logger error message 
+2024-07-15 14:52:15,500 - 日志.py[line:41] - CRITICAL: 这是 logger critical message
+2024-07-21 19:30:03,515 - 日志.py[line:10] - INFO: 这是 loggging info message
+2024-07-21 19:30:03,515 - 日志.py[line:12] - WARNING: 这是 loggging a warning message
+2024-07-21 19:30:03,515 - 日志.py[line:13] - ERROR: 这是 an loggging error message
+2024-07-21 19:30:03,515 - 日志.py[line:14] - CRITICAL: 这是 loggging critical message
+2024-07-21 19:30:03,516 - 日志.py[line:38] - INFO: 这是 logger info message
+2024-07-21 19:30:03,516 - 日志.py[line:39] - WARNING: 这是 logger warning message
+2024-07-21 19:30:03,516 - 日志.py[line:40] - ERROR: 这是 logger error message 
+2024-07-21 19:30:03,516 - 日志.py[line:41] - CRITICAL: 这是 logger critical message
