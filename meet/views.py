@@ -19,7 +19,7 @@ class UserListView(viewsets.ModelViewSet):
     pagination_class = LoginPagination  # 设置分页器
 
 # 注册
-@api_view(['POST'])
+@api_view(['POST'])   #@api_view 是一个装饰器，用于将一个视图函数转换为 DRF 的视图，并指定允许的 HTTP 请求方法。
 def register(request):
     # 获取请求中的用户名和密码
     username = request.data.get('username')
@@ -156,9 +156,9 @@ class AttendeeView(viewsets.ModelViewSet):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 #签到分页
-class AttendeeDetailView(viewsets.ModelViewSet):
-    pagination_class = LoginPagination  # 设置分页器
-    queryset = Attendee.objects.all().order_by('-meetdate')  # 添加排序
-    serializer_class = AttendeeSerializer
+# class AttendeeDetailView(viewsets.ModelViewSet):
+#     pagination_class = LoginPagination  # 设置分页器
+#     queryset = Attendee.objects.all().order_by('-meetdate')  # 添加排序
+#     serializer_class = AttendeeSerializer
 
 
