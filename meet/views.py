@@ -156,9 +156,9 @@ class AttendeeView(viewsets.ModelViewSet):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 #签到分页
-# class AttendeeDetailView(viewsets.ModelViewSet):
-#     pagination_class = LoginPagination  # 设置分页器
-#     queryset = Attendee.objects.all().order_by('-meetdate')  # 添加排序
-#     serializer_class = AttendeeSerializer
+class AttendeeDetailView(viewsets.ModelViewSet):
+    pagination_class = LoginPagination  # 设置分页器
+    queryset = Attendee.objects.all().order_by('-meetdate')  # 添加排序
+    serializer_class = AttendeeSerializer
 
 
