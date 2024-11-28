@@ -36,4 +36,4 @@ regex_list = {
     '换股期限': [r'(\d{4} 年 \d{1,2} 月 \d{1,2})', r'(\d{4} 年 \d{1,2} 月 \d{1,2})']
 }
 result = reg_search(text, regex_list)
-# print(result)
+print(result)
