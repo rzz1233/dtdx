@@ -138,9 +138,21 @@ class MeetinglistView(viewsets.ModelViewSet):
 #会议分页
 class MeetinglistDetailView(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]  # 仅允许经过身份验证的用户访问
-    queryset = Meetinglist.objects.all().order_by('-date')  # 使用 '-' 表示降序 （根据date降序排序）
+    queryset = Meetinglist.objects.all()
     pagination_class = LoginPagination  # 设置分页器
     serializer_class = MeetinglistSerializer
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        return queryset.order_by('-date') # 使用 '-' 表示降序 （根据date降序排序）
+    def list(self, request, *args, **kwargs):
+        # factor = self.request.query_params.get("factor", "f1")  根据请求中的参数来决定哪些数据需要返回
+        quaryset = self.get_queryset()
+        page = self.paginate_queryset(quaryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+        serializer = self.get_serializer(quaryset, many=True)
+        return Response(serializer.data)
 
 
 
