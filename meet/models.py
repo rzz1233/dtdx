@@ -44,6 +44,6 @@ class Attendee(models.Model):
     status = models.CharField(max_length=32)
 
 
-# class qiandao(models.Model):
-#     meeting = models.ForeignKey(Meetinglist, on_delete=models.CASCADE)
-#     status = models.CharField(max_length=32)
+class qiandao(models.Model):
+    meeting = models.ForeignKey(Meetinglist, on_delete=models.CASCADE)
+    status = models.CharField(max_length=32)
