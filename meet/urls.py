@@ -2,7 +2,7 @@ from meet.views import (UserView,MeetinglistView,AttendeeView,DeptView,
                     MeetinglistDetailView,AttendeeDetailView,register,login,CustomTokenRefreshView,UserListView)
 
 from rest_framework.routers import DefaultRouter
-from django.urls import path
+from django.urls import path, include
 # 创建一个默认的路由器
 router = DefaultRouter()
 # 注册视图集
@@ -25,7 +25,6 @@ urlpatterns = [
 
     path('token/refresh/', CustomTokenRefreshView.as_view(), name='token_refresh'),
 
-
-
+    path('', include(router.urls)),
+    path('meetinglist/update-status/', MeetinglistView.as_view({'get': 'update_meeting_status'}), name='meeting-status-update'),
 ]
-urlpatterns += router.urls
