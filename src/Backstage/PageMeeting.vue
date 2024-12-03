@@ -52,7 +52,7 @@ export default {
       isShow: false,
       meetdatas: [],       // 保存会议数据
       currentPage: 1,      // 当前页数
-      pageSize: 2,         // 每页显示的记录数
+      pageSize: 6,         // 每页显示的记录数
       nextPage: null,      // 下一页链接
       prevPage: null       // 上一页链接
     };

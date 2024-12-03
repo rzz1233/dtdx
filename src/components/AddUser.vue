@@ -6,7 +6,7 @@
             <input type="text" v-model="user" placeholder="请输入用户名" />
             <input type="password" v-model="pwd" placeholder="请输入密码" />
             <div class="form-item">
-                <label for="departments">参会部门:</label>
+                <label for="departments">部门:</label>
                 <select v-model="dept" required>
                     <option value="" disabled>请选择部门</option>
                     <option v-for="item in options" :key="item.id" :value="item.id">
@@ -51,16 +51,30 @@ export default {
     },
     methods: {
         async fetchData() {
+            console.log('开始获取部门数据...');
             try {
                 const response = await apiClient.get('/api/dept/');
                 this.options = response.data;
+                console.log('部门数据获取成功:', this.options);
             } catch (error) {
-                console.error('获取数据失败:', error);
+                console.error('获取部门数据失败:', error);
             }
         },
         async addEmployee() {
-            this.loading = true; // 开始加载
+            console.log('提交数据:', {
+                name: this.name,
+                user: this.user,
+                pwd: this.pwd,
+                dept: this.dept
+            });
 
+            if (!this.name || !this.user || !this.pwd || !this.dept) {
+                console.log('表单验证失败：所有字段都必须填写');
+                alert('所有字段都必须填写！');
+                return;
+            }
+
+            this.loading = true; // 开始加载
             try {
                 const response = await apiClient.post('/api/user/', {
                     name: this.name,
@@ -69,14 +83,14 @@ export default {
                     dept: this.dept
                 });
 
-                console.log("员工添加成功:", response.data);
+                console.log("员工添加成功:", response.data.results);
                 this.$emit('add'); // 发出添加成功的事件
 
             } catch (error) {
                 console.error('添加员工失败:', error);
 
-                // 检查后端返回的错误信息
                 if (error.response && error.response.data) {
+                    console.error('错误响应数据:', error.response.data);
                     alert(error.response.data.error || "添加员工失败，请重试。");
                 } else {
                     alert("添加员工失败，请重试。");
@@ -88,11 +102,14 @@ export default {
         },
         close() {
             // 重置所有输入框
+            this.resetForm();
+            this.$emit('update:visible', false);
+        },
+        resetForm() {
             this.name = "";
             this.user = "";
             this.pwd = "";
             this.dept = "";
-            this.$emit('update:visible', false);
         }
     }
 }
@@ -131,5 +148,4 @@ input {
 button {
     margin-right: 10px;
 }
-
 </style>

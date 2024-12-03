@@ -126,7 +126,7 @@ export default {
       
       this.statusUpdateTimer = setInterval(() => {
         this.updateMeetingStatus();
-      }, 30000);
+      }, 60000);
     },
     clearStatusUpdateTimer() {
       if (this.statusUpdateTimer) {
@@ -136,14 +136,10 @@ export default {
     },
     async updateMeetingStatus() {
       try {
-        // const token = localStorage.getItem('access_token');
-        // if (!token) {
-        //   console.error('未找到访问令牌');
-        //   return;
-        // }
-
         const response = await apiClient.get('/api/meetinglist/update_meeting_status/');
-        console.log('会议状态更新成功:', response.data);
+        if (response.data && response.data.updated_count > 0) {
+          console.log('会议状态更新成功:', response.data);
+        }
       } catch (error) {
         console.error('会议状态更新失败:', error.response?.data || error);
       }

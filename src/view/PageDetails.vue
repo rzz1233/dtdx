@@ -26,17 +26,17 @@
                               <td>{{ item.check_time }}</td>
                               <td>
                                   <button 
-                                      :class="item.status === '签到' ? 'absent' : 'checked-in'" 
+                                      :class="getStatusClass(item)"
                                       @click="checkIn(item)" 
-                                      :disabled="item.status !== '签到'">
-                                      {{ item.status }}
+                                      :disabled="!canCheckIn(item)">
+                                      {{ getStatusText(item) }}
                                   </button>
                               </td>
                           </tr>
                       </tbody>
                   </table>
               </template>
-              <p v-else class="no-meetings">请点击刷新会议详情</p>
+              <p v-else class="no-meetings">暂无会议详情</p>
           </div>
       </div>
       <LoginFrom1 :visible.sync="isShow" @loginSuccess="handleLoginSuccess"></LoginFrom1>
@@ -57,6 +57,7 @@ export default {
           attendeelist: [], // 签到列表
           isShow:false,
           isLoggedIn:false,
+          refreshTimer: null, // 添加定时器
       };
   },
   components: {
@@ -69,6 +70,14 @@ export default {
       this.fetchData(); // 获取会议数据
       this.deptData(); // 获取用户数据
       this.attendeeData(); // 获取签到记录
+      // 启动自动刷新
+      this.startAutoRefresh();
+  },
+  beforeDestroy() {
+      // 组件销毁前清除定时器
+      if (this.refreshTimer) {
+          clearInterval(this.refreshTimer);
+      }
   },
   methods: {
       async fetchData() {
@@ -103,38 +112,29 @@ export default {
                   const usersInDept = this.getFilteredUsers(meeting.dept_info.name);
                   for (const user of usersInDept) {
                       // 检查该用户是否已经签到
-                      const alreadyCheckedIn = existingAttendees.some(item => item.user === user.name && item.meetname === meeting.title);
-                      if (!alreadyCheckedIn) {
-                          // 如果未签到，添加新记录
-                          try {
-                              await apiClient.post('/api/attendee/', {
-                                  meetname: meeting.title, // 会议名称
-                                  user: user.name, // 用户名称
-                                  meetdate: meeting.date, // 会议日期
-                                  check_time: meeting.starttime, // 签到时间
-                                  status: "签到" // 初始签到状态
-                              });
-                          } catch (error) {
-                              console.error('添加失败:', error); // 错误处理
-                          }
-                      } else {
-                          // 如果该用户已经签到，保持其原有状态
-                          const existingAttendee = existingAttendees.find(item => item.user === user.name && item.meetname === meeting.title);
+                      const alreadyCheckedIn = existingAttendees.some(
+                          item => item.user === user.name && item.meetname === meeting.title
+                      );
+
+                      try {
                           await apiClient.post('/api/attendee/', {
-                              meetname: existingAttendee.meetname,
-                              user: existingAttendee.user,
-                              meetdate: existingAttendee.meetdate,
-                              check_time: existingAttendee.check_time,
-                              status: existingAttendee.status // 保持原有状态
+                              meetname: meeting.title,
+                              user: user.name,
+                              meetdate: meeting.date,
+                              check_time: meeting.starttime,
+                              status: alreadyCheckedIn ? "已签到" : "签到"
                           });
+                      } catch (error) {
+                          console.error('添加签到记录失败:', error);
                       }
                   }
               }
 
-              // 重新获取签到记录以更新attendeelist
-              await this.attendeeData(); // 确保更新视图
+              // 重新获取最新的签到记录
+              await this.attendeeData();
+              console.log('刷新签到记录成功');
           } catch (error) {
-              console.error('操作失败:', error); // 错误处理
+              console.error('刷新签到记录失败:', error);
           }
       },
 
@@ -162,26 +162,79 @@ export default {
         this.isLoggedIn = true; // 设置登录状态为已登录
     },
 
+    // 检查是否可以签到
+    canCheckIn(item) {
+        if (item.status === '已签到') return false;
+        
+        const now = new Date();
+        const meetingTime = new Date(`${item.meetdate}T${item.check_time}`);
+        const twoMinutesAfter = new Date(meetingTime.getTime() + 2 * 60000);
+        
+        // 如果当前时间超过会议开始时间2分钟，则不能签到
+        return now <= twoMinutesAfter;
+    },
+
+    // 获取状态显示文本
+    getStatusText(item) {
+        if (item.status === '已签到') return '已签到';
+        
+        const now = new Date();
+        const meetingTime = new Date(`${item.meetdate}T${item.check_time}`);
+        const twoMinutesAfter = new Date(meetingTime.getTime() + 2 * 60000);
+        
+        if (now > twoMinutesAfter) {
+            return '未签到';
+        }
+        return '签到';
+    },
+
+    // 获取状态样式类
+    getStatusClass(item) {
+        if (item.status === '已签到') return 'checked-in';
+        
+        const now = new Date();
+        const meetingTime = new Date(`${item.meetdate}T${item.check_time}`);
+        const twoMinutesAfter = new Date(meetingTime.getTime() + 5 * 60000);
+        
+        if (now > twoMinutesAfter) {
+            return 'timeout';
+        }
+        return 'absent';
+    },
 
     async checkIn(item) {
-    if (!this.isLoggedIn) { // 如果用户未登录
-        this.isShow = true; // 显示登录窗口
-        return; // 暂停签到操作
-    }
-    try {
-        // 用户已经登录，更新签到状态为“已签到”
-        const response = await apiClient.put(`/api/attendee/${item.id}/`, {
-            ...item, // 保留其他信息
-            status: "已签到" // 更新签到状态
-        });
-        console.log('签到成功:', response);
-        // 更新本地数据
-        item.status = '已签到'; // 更新状态
-    } catch (error) {
-        console.error('签到失败:', error); // 错误处理
-    }
-},
+        if (!this.isLoggedIn) {
+            this.isShow = true;
+            return;
+        }
 
+        try {
+            const now = new Date();
+            const meetingTime = new Date(`${item.meetdate}T${item.check_time}`);
+            const twoMinutesAfter = new Date(meetingTime.getTime() + 2 * 60000);
+
+            if (now > twoMinutesAfter) {
+                this.$message.error('已超过签到时间限制');
+                return;
+            }
+
+            const currentTime = now.toTimeString().slice(0, 8);
+            const response = await apiClient.put(`/api/attendee/${item.id}/`, {
+                ...item,
+                status: "已签到",
+                check_time: currentTime
+            });
+
+            if (response.status === 200) {
+                this.$message.success('签到成功！');
+                item.status = '已签到';
+                item.check_time = currentTime;
+            }
+        } catch (error) {
+            this.$message.error('签到失败：' + (error.response?.data?.message || '请稍后重试'));
+            console.error('签到失败:', error);
+        }
+    },
 
       getCurrentDate() {
           // 获取当前日期并格式化为YYYY-MM-DD
@@ -195,6 +248,24 @@ export default {
       getFilteredUsers(dept) {
           // 根据部门过滤用户
           return this.users.filter(user => user.dept_info.name === dept);
+      },
+      async startAutoRefresh() {
+          // 立即执行一次
+          await this.fetchData();
+          await this.deptData();
+          await this.addDate();
+
+          // 设置定时器，改为每30秒执行一次
+          this.refreshTimer = setInterval(async () => {
+              try {
+                  await this.fetchData(); // 获取最新的会议数据
+                  await this.deptData();  // 获取最新的用户数据
+                  await this.addDate();   // 更新签到列表
+                  console.log('自动刷新执行成功');
+              } catch (error) {
+                  console.error('自动刷新失败:', error);
+              }
+          }, 30000); // 改为30秒
       }
   }
 };
@@ -335,5 +406,27 @@ button:disabled {
   color: #e74c3c;
   font-size: 18px;
   margin-top: 20px;
+}
+
+/* 添加超时状态样式 */
+.timeout {
+    background-color: #95a5a6; /* 灰色表示超时 */
+    cursor: not-allowed;
+}
+
+.timeout:hover {
+    background-color: #95a5a6;
+    transform: none;
+}
+
+/* 修改按钮禁用状态样式 */
+button:disabled {
+    background-color: #95a5a6;
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+button:disabled:hover {
+    transform: none;
 }
 </style>
