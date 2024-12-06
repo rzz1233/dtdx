@@ -28,17 +28,17 @@ class DeptSerializers(serializers.ModelSerializer):
 
 class UserSerializers(serializers.ModelSerializer):
     dept_info = serializers.SerializerMethodField(read_only=True)
-
+    dept = serializers.PrimaryKeyRelatedField(queryset=Dept.objects.all())  # 允许通过主键写入 dept
     def get_dept_info(self, obj):
         dept_queryset = obj.dept
         return {"id": dept_queryset.id, "name": dept_queryset.name}
     class Meta:
         model = Users  # 指定模型
         fields = '__all__'
-        extra_kwargs = {
-            'dept': {'write_only': True},
-            # 只写的不显示，只显示只读的
-        }
+        # extra_kwargs = {
+        #     'dept': {'write_only': True},
+        #     # 只写的不显示，只显示只读的
+        # }
 
 class MeetinglistSerializer(serializers.ModelSerializer):
     dept = serializers.PrimaryKeyRelatedField(queryset=Dept.objects.all())  # 允许通过主键写入 dept

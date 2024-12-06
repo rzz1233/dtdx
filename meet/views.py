@@ -84,7 +84,7 @@ class CustomTokenRefreshView(TokenRefreshView):
 # 用户视图
 class UserView(viewsets.ModelViewSet):
 
-    queryset = Users.objects.all().order_by('id')  # 添加排序
+    queryset = Users.objects.all()  # 添加排序
     serializer_class = UserSerializers
     pagination_class = LoginPagination  # 设置分页器
 
@@ -92,7 +92,7 @@ class UserView(viewsets.ModelViewSet):
         username = request.data.get('user')
 
         # 检查用户名是否已存在
-        if User.objects.filter(user=username).exists():
+        if Users.objects.filter(user=username).exists():
             return Response({'error': '用户名已存在！'}, status=status.HTTP_400_BAD_REQUEST)
 
         # 调用父类的 create 方法，处理正常的创建逻辑
@@ -117,7 +117,7 @@ class DeptView(viewsets.ModelViewSet):
 class MeetinglistView(viewsets.ModelViewSet):
     queryset = Meetinglist.objects.all()
     serializer_class = MeetinglistSerializer
-
+    # permission_classes = [IsAuthenticated]  # 仅允许经过身份验证的用户访问
     # 预约时间冲突
     @action(detail=False, methods=['get'])
     def check_time_conflict(self, request):
