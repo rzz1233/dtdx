@@ -47,3 +47,28 @@ class Attendee(models.Model):
 class qiandao(models.Model):
     meeting = models.ForeignKey(Meetinglist, on_delete=models.CASCADE)
     status = models.CharField(max_length=32)
+
+class MechanicsOnlineDayTest(models.Model):
+    id = models.BigAutoField(primary_key=True)
+    county = models.TextField(null=True, blank=True)
+    online_num = models.BigIntegerField(null=True, blank=True)
+    zongliangtongbi = models.FloatField(null=True, blank=True)
+    zonglianghuanbi = models.FloatField(null=True, blank=True)
+    pingjungongshi = models.FloatField(null=True, blank=True)
+    gongshitongbi = models.FloatField(null=True, blank=True)
+    gongshihuanbi = models.FloatField(null=True, blank=True)
+    kaigonglv = models.FloatField(null=True, blank=True)
+    kaigonglvtongbi = models.FloatField(null=True, blank=True)
+    kaigonglvhuanbi = models.FloatField(null=True, blank=True)
+    gongzuoyebili = models.FloatField(null=True, blank=True)
+    kaigongshu = models.BigIntegerField(null=True, blank=True)
+    zonggongshi = models.FloatField(null=True, blank=True)
+    gaogongzuoyeshu = models.BigIntegerField(null=True, blank=True)  # gaogongzuoyeshu 字段
+    datetime = models.DateTimeField(null=True, blank=True)
+    update_time = models.TextField(null=True, blank=True)  # update_time 字段
+    county_id = models.BigIntegerField(null=True, blank=True)  # county_id 字段
+
+    class Meta:
+        managed = False
+        db_table = 't_mechanics_online_day_test'  # 表名
+        unique_together = ('datetime', 'county_id')  # 设置唯一约束

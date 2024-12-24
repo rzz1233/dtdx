@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     'rest_framework.authtoken',
     'rest_framework',
     'corsheaders',
+    'django_apscheduler',
     'meet'
 ]
 
@@ -61,8 +62,7 @@ TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
         "DIRS": [
-            os.path.join(BASE_DIR, "templates"),
-            os.path.join(BASE_DIR, "docs")],
+            os.path.join(BASE_DIR, "templates")],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -130,19 +130,26 @@ LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
     'handlers': {
-        'console': {
+        'file': {
             'level': 'INFO',
-            'class': 'logging.StreamHandler',
+            'class': 'logging.FileHandler',
+            'filename': 'myapp.log',
         },
     },
     'loggers': {
         'django': {
-            'handlers': ['console'],
+            'handlers': ['file'],
             'level': 'INFO',
             'propagate': True,
         },
+        'myapp.tasks': {  # 只记录特定任务的日志
+            'handlers': ['file'],
+            'level': 'INFO',
+            'propagate': False,
+        },
     },
 }
+
 
 
 # Static files (CSS, JavaScript, Images)
@@ -171,7 +178,7 @@ SIMPLE_JWT = {
 #     ],
 # }
 
-
+ENABLE_SCHEDULED_TASKS = 1  # 启用定时任务，如果设置为0，则禁用
 # settings.py
 
 from corsheaders.defaults import default_headers
