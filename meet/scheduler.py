@@ -3,8 +3,10 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from django_apscheduler.jobstores import MemoryJobStore
 import pandas as pd
 import logging
-from meet.models import MechanicsOnlineDayTest
+from meet.models import MechanicsOnlineDayTest,Meetinglist
 import requests
+from django.utils import timezone
+
 
 logger = logging.getLogger(__name__)
 
@@ -62,21 +64,58 @@ def sync_clue_to_mechanics():
     except requests.RequestException as e:
         logger.error(f"请求失败: {e}")
 
+def update_meeting_status():
+    # 使用本地时间
+    current_datetime = timezone.localtime(timezone.now())
+    current_date = current_datetime.date()
+    current_time = current_datetime.time()
+
+    # print(f"当前时间: {current_time}")  # 调试信息
+
+    # 更新已过期的会议状态
+    expired_meetings = Meetinglist.objects.filter(
+        date__lt=current_date,
+        status__in=['未开始', '进行中']  # 同时更新未开始和进行中的过期会议
+    )
+    expired_meetings.update(status='已结束')
+
+    # 更新当天的会议状态
+    today_meetings = Meetinglist.objects.filter(
+        date=current_date
+    )
+
+    for meeting in today_meetings:
+        # print(f"会议: {meeting.title}")  # 调试信息
+        # print(f"开始时间: {meeting.starttime}")  # 调试信息
+        # print(f"结束时间: {meeting.endtime}")  # 调试信息
+        # print(f"当前状态: {meeting.status}")  # 调试信息
+
+        # 使用严格的时间比较
+        if meeting.starttime <= current_time <= meeting.endtime:
+            if meeting.status != '进行中':
+                meeting.status = '进行中'
+                meeting.save()
+        elif current_time > meeting.endtime:
+            if meeting.status != '已结束':
+                meeting.status = '已结束'
+                meeting.save()
+        elif current_time < meeting.starttime:
+            if meeting.status != '未开始':
+                meeting.status = '未开始'
+                meeting.save()
+
 
 def start():
-    # sync_clue_to_mechanics()
     scheduler = BackgroundScheduler()
     scheduler.add_jobstore(MemoryJobStore(), "default")
 
     scheduler.add_job(
-        sync_clue_to_mechanics,
-        "cron",
-        day="*",  # 每天执行
-        hour="16",
-        minute="7",  # 10分
-        second="0",  # 0秒
-        id="sync_clue_to_mechanics",
+        update_meeting_status,
+        "interval",  # 使用间隔调度
+        minutes=2,  # 每2分钟执行一次
+        id="update_meeting_status",
     )
+
     scheduler.start()
     logger.info("Scheduler started successfully")
 
