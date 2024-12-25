@@ -126,14 +126,19 @@ USE_I18N = True
 USE_TZ = True
 # meeting/settings.py
 
+import logging.handlers
+
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
     'handlers': {
         'file': {
             'level': 'INFO',
-            'class': 'logging.FileHandler',
-            'filename': 'myapp.log',
+            'class': 'logging.handlers.TimedRotatingFileHandler',
+            'filename': 'myapp.log',  # 日志文件名
+            'when': 'midnight',  # 每天午夜切换日志文件
+            'backupCount': 3,  # 保留最近 3 天的日志文件
+            'formatter': 'verbose',  # 使用自定义的格式化器
         },
     },
     'loggers': {
@@ -142,13 +147,20 @@ LOGGING = {
             'level': 'INFO',
             'propagate': True,
         },
-        'myapp.tasks': {  # 只记录特定任务的日志
+        'myapp.tasks': {
             'handlers': ['file'],
             'level': 'INFO',
             'propagate': False,
         },
     },
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {message}',
+            'style': '{',
+        },
+    },
 }
+
 
 
 
