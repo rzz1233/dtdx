@@ -30,7 +30,7 @@
           </li>
           </ul>
         <ul v-else>
-          <li>今日暂无预约</li>
+          <li>今日暂无下一预约</li>
         </ul> 
       </div>
     </div>
@@ -64,6 +64,7 @@ export default {
     this.setCurrentTime(); // 设置当前时间
   },
   methods: {
+    
     async fetchData() {
     try {
       const response = await apiClient.get('/api/meetinglist/'); // 替换为你的 API 端点

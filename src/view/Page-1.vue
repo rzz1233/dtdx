@@ -26,7 +26,7 @@
       <div class="next-appointments">
         <h2>下一预约</h2>
         <ul>
-          <li v-if="nextAppointments.length === 0">今日暂无预约</li>
+          <li v-if="nextAppointments.length === 0">今日暂无下一预约</li>
           <li v-for="item in nextAppointments" :key="item.id">
             <i class="el-icon-time"></i> {{ item.date }} - {{ item.starttime }} - {{ item.endtime }} --- 
             <i class="el-icon-suitcase"></i> {{ item.title }} --- 
@@ -124,7 +124,7 @@ export default {
       }
     },
     goToOrder() {
-      this.$router.push('/main/order'); // 跳转到详情页面
+      this.$router.push('/main/page2'); // 跳转到详情页面
     },
     showMeetingForm() {
       this.isShowMeetingForm = true; // 显示会议预约窗口

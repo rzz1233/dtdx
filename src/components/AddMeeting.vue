@@ -180,6 +180,8 @@ export default {
         alert('会议预约成功');
         this.resetForm();
         this.closeWindow();
+        // 跳转到 /main/list
+        this.$router.push('/main/list');
       } catch (error) {
         console.error('提交表单失败:', error);
         alert('预约失败，请稍后重试');
