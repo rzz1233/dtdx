@@ -1,432 +1,184 @@
 <template>
     <div id="app" class="app-background">
       <div class="container">
-          <h1>{{ title }} <span class="date">{{ currentDate }}</span></h1>
-          <button class="refresh-button" @click="addDate">请点击刷新会议详情</button>
-
+          <h1>会议详情 <span class="date">{{ currentDate }}</span></h1>
+          
           <!-- 会议详情列表 -->
           <div class="meeting-details">
               <h2>会议详情</h2>
-              <template v-if="attendeelist.length > 0">
-                  <table>
-                      <thead>
-                          <tr>
-                              <th>会议名称</th>
-                              <th>参会人员</th>
-                              <th>会议日期</th>
-                              <th>会议时间</th>
-                              <th>签到状态</th>
-                          </tr>
-                      </thead>
-                      <tbody>
-                          <tr v-for="item in attendeelist" :key="item.id">
-                              <td>{{ item.meetname }}</td>
-                              <td>{{ item.user }}</td>
-                              <td>{{ item.meetdate }}</td>
-                              <td>{{ item.check_time }}</td>
-                              <td>
-                                  <button 
-                                      :class="getStatusClass(item)"
-                                      @click="checkIn(item)" 
-                                      :disabled="!canCheckIn(item)">
-                                      {{ getStatusText(item) }}
-                                  </button>
-                              </td>
-                          </tr>
-                      </tbody>
-                  </table>
-              </template>
-              <p v-else class="no-meetings">暂无会议详情</p>
+              <table>
+                  <thead>
+                      <tr>
+                          <th>会议名称</th>
+                          <th>参会人员</th>
+                          <th>会议日期</th>
+                          <th>会议时间</th>
+                          <th>签到状态</th>
+                      </tr>
+                  </thead>
+                  <tbody>
+                      <tr v-if="qiandaoList.length === 0">
+                          <td colspan="5">
+                              <p class="loading-text">加载会议数据中...</p>
+                          </td>
+                      </tr>
+                      <tr v-for="(item, index) in qiandaoList" :key="index">
+                          <td>{{ item.meetname }}</td>
+                          <td>{{ item.user }}</td>
+                          <td>{{ item.meetdate }}</td>
+                          <td>{{ item.check_time }}</td>
+                          <td>
+                              <button 
+                                  :class="{'checked-in': item.status === '已签到'}"
+                                  :disabled="item.status === '未签到'"
+                                  @click="handleCheckIn(item)">
+                                  {{ item.status }}
+                              </button>
+                          </td>
+                      </tr>
+                  </tbody>
+              </table>
           </div>
       </div>
-      <LoginFrom1 :visible.sync="isShow" @loginSuccess="handleLoginSuccess"></LoginFrom1>
   </div>
 </template>
 
 <script>
 import apiClient from './api';
-import LoginFrom1 from '@/components/LoginFrom-1.vue';
 
 export default {
   data() {
       return {
-          title: '会议详情', // 组件标题
-          currentDate: '', // 当前日期
-          meetingdata: [], 
-          users: [], // 用户列表
-          attendeelist: [], // 签到列表
-          isShow:false,
-          isLoggedIn:false,
-          refreshTimer: null, // 添加定时器
+          currentDate: '',
+          qiandaoList: [] // 新增签到数据列表
       };
   },
-  components: {
-    LoginFrom1,
-   
-  },
   created() {
-      // 组件创建时调用的方法
-      this.getCurrentDate(); // 获取当前日期
-      this.fetchData(); // 获取会议数据
-      this.deptData(); // 获取用户数据
-      this.attendeeData(); // 获取签到记录
-      // 启动自动刷新
-      this.startAutoRefresh();
-  },
-  beforeDestroy() {
-      // 组件销毁前清除定时器
-      if (this.refreshTimer) {
-          clearInterval(this.refreshTimer);
-      }
+      this.getCurrentDate();
+      this.fetchQiandaoData(); // 新增数据获取
   },
   methods: {
-      async fetchData() {
-          try {
-              //获取会议信息
-              const response = await apiClient.get('/api/meetinglist/');
-              this.meetingdata = response.data; 
-          } catch (error) {
-              console.error('获取数据失败:', error); // 错误处理
-          }
-      },
-      async deptData() {
-          try {
-              // 获取用户数据
-              const response = await apiClient.get('/api/user/');
-              this.users = response.data.results; // 保存用户数据
-          } catch (error) {
-              console.error('获取数据失败:', error); // 错误处理
-          }
-      },
-
-      async addDate() {
-          try {
-              // 获取当前已签到用户的信息
-              const existingAttendees = this.attendeelist.filter(item => item.status === '已签到');
-
-              // 删除所有签到记录
-              await apiClient.delete('/api/attendee/all/');
-
-              // 重新添加签到记录
-              for (const meeting of this.meetingdata) {
-                  const usersInDept = this.getFilteredUsers(meeting.dept_info.name);
-                  for (const user of usersInDept) {
-                      // 检查该用户是否已经签到
-                      const alreadyCheckedIn = existingAttendees.some(
-                          item => item.user === user.name && item.meetname === meeting.title
-                      );
-
-                      try {
-                          await apiClient.post('/api/attendee/', {
-                              meetname: meeting.title,
-                              user: user.name,
-                              meetdate: meeting.date,
-                              check_time: meeting.starttime,
-                              status: alreadyCheckedIn ? "已签到" : "签到"
-                          });
-                      } catch (error) {
-                          console.error('添加签到记录失败:', error);
-                      }
-                  }
-              }
-
-              // 重新获取最新的签到记录
-              await this.attendeeData();
-              console.log('刷新签到记录成功');
-          } catch (error) {
-              console.error('刷新签到记录失败:', error);
-          }
-      },
-
-      async attendeeData() {
-        try {
-            // 获取签到记录
-            const response = await apiClient.get('/api/attendee/');
-            const allAttendees = response.data; // 获取所有签到记录
-
-            // 筛选出会议日期为当前日期的签到记录
-            this.attendeelist = allAttendees.filter(item => item.meetdate === this.currentDate);
-
-            // 对attendeelist按签到时间排序
-            this.attendeelist.sort((a, b) => {
-                const dateA = new Date(`${a.meetdate}T${a.check_time}`); // 创建日期对象
-                const dateB = new Date(`${b.meetdate}T${b.check_time}`); // 创建日期对象
-                return dateA - dateB; // 从近到远排序
-            });
-        } catch (error) {
-            console.error('获取数据失败:', error); // 错误处理
-        }
-    },
-    handleLoginSuccess() {
-        this.isShow = false; // 隐藏登录窗口
-        this.isLoggedIn = true; // 设置登录状态为已登录
-    },
-
-    // 检查是否可以签到
-    canCheckIn(item) {
-        if (item.status === '已签到') return false;
-        
-        const now = new Date();
-        const meetingTime = new Date(`${item.meetdate}T${item.check_time}`);
-        const twoMinutesAfter = new Date(meetingTime.getTime() + 2 * 60000);
-        
-        // 如果当前时间超过会议开始时间2分钟，则不能签到
-        return now <= twoMinutesAfter;
-    },
-
-    // 获取状态显示文本
-    getStatusText(item) {
-        if (item.status === '已签到') return '已签到';
-        
-        const now = new Date();
-        const meetingTime = new Date(`${item.meetdate}T${item.check_time}`);
-        const twoMinutesAfter = new Date(meetingTime.getTime() + 2 * 60000);
-        
-        if (now > twoMinutesAfter) {
-            return '未签到';
-        }
-        return '签到';
-    },
-
-    // 获取状态样式类
-    getStatusClass(item) {
-        if (item.status === '已签到') return 'checked-in';
-        
-        const now = new Date();
-        const meetingTime = new Date(`${item.meetdate}T${item.check_time}`);
-        const twoMinutesAfter = new Date(meetingTime.getTime() + 5 * 60000);
-        
-        if (now > twoMinutesAfter) {
-            return 'timeout';
-        }
-        return 'absent';
-    },
-
-    async checkIn(item) {
-        if (!this.isLoggedIn) {
-            this.isShow = true;
-            return;
-        }
-
-        try {
-            const now = new Date();
-            const meetingTime = new Date(`${item.meetdate}T${item.check_time}`);
-            const twoMinutesAfter = new Date(meetingTime.getTime() + 2 * 60000);
-
-            if (now > twoMinutesAfter) {
-                this.$message.error('已超过签到时间限制');
-                return;
-            }
-
-            const currentTime = now.toTimeString().slice(0, 8);
-            const response = await apiClient.put(`/api/attendee/${item.id}/`, {
-                ...item,
-                status: "已签到",
-                check_time: currentTime
-            });
-
-            if (response.status === 200) {
-                this.$message.success('签到成功！');
-                item.status = '已签到';
-                item.check_time = currentTime;
-            }
-        } catch (error) {
-            this.$message.error('签到失败：' + (error.response?.data?.message || '请稍后重试'));
-            console.error('签到失败:', error);
-        }
-    },
-
       getCurrentDate() {
-          // 获取当前日期并格式化为YYYY-MM-DD
           const today = new Date();
           const year = today.getFullYear();
           const month = String(today.getMonth() + 1).padStart(2, '0');
           const day = String(today.getDate()).padStart(2, '0');
-          this.currentDate = `${year}-${month}-${day}`; // 更新当前日期
+          this.currentDate = `${year}-${month}-${day}`;
       },
-
-      getFilteredUsers(dept) {
-          // 根据部门过滤用户
-          return this.users.filter(user => user.dept_info.name === dept);
+      // 新增数据获取方法
+      async fetchQiandaoData() {
+          try {
+              const response = await apiClient.get('/api/qiandao/', {
+                  params: {
+                      date: this.currentDate
+                  }
+              });
+              this.qiandaoList = response.data;
+          } catch (error) {
+              console.error('获取签到数据失败:', error);
+          }
       },
-      async startAutoRefresh() {
-          // 立即执行一次
-          await this.fetchData();
-          await this.deptData();
-          await this.addDate();
-
-          // 设置定时器，改为每30秒执行一次
-          this.refreshTimer = setInterval(async () => {
-              try {
-                  await this.fetchData(); // 获取最新的会议数据
-                  await this.deptData();  // 获取最新的用户数据
-                  await this.addDate();   // 更新签到列表
-                  console.log('自动刷新执行成功');
-              } catch (error) {
-                  console.error('自动刷新失败:', error);
+      // 修改后的签到处理方法
+      handleCheckIn(item) {
+          // 直接更新本地数据状态
+          this.qiandaoList = this.qiandaoList.map(i => {
+              if (i.meetname === item.meetname && i.user === item.user) {
+                  return { ...i, status: "已签到" };
               }
-          }, 30000); // 改为30秒
+              return i;
+          });
       }
   }
 };
 </script>
 
 <style scoped>
-/* 背景样式 */
+/* 优化后的背景样式 */
 .app-background {
-  background: linear-gradient(135deg, #e0f7fa, #80deea);
-  height: 100vh; /* 高度设置为视口高度 */
+  background: linear-gradient(135deg, #e3f2fd, #bbdefb);
+  min-height: 100vh;
 }
 
-/* 主容器样式 */
+/* 增强容器视觉效果 */
 .container {
-  background-image: url('../images/tu4.jpg');
-  background-size: cover; /* 背景图像覆盖容器 */
-  background-position: center; /* 背景图像居中 */
-  background-repeat: no-repeat; /* 不重复背景图像 */
-  width: 85%; /* 容器宽度 */
-  height: 75vh; /* 容器高度 */
-  margin: 50px auto; /* 垂直居中 */
-  padding: 20px; /* 内边距 */
-  border: 2px solid #1abc9c; /* 边框样式 */
-  border-radius: 12px; /* 圆角 */
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1); /* 阴影效果 */
-  background-color: rgba(255, 255, 255, 0.9); /* 背景颜色 */
-  display: flex; /* 使用弹性布局 */
-  flex-direction: column; /* 垂直方向布局 */
-  justify-content: space-between; /* 子元素均匀分布 */
+  background-image: linear-gradient(rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.98)), 
+                    url('../images/tu4.jpg');
+  backdrop-filter: blur(2px);
+  box-shadow: 0 8px 32px rgba(31, 38, 135, 0.15);
 }
 
-/* 标题样式 */
+/* 优化标题样式 */
 h1 {
-  text-align: center; /* 标题居中 */
-  color: wheat; /* 标题颜色 */
-  margin-bottom: 10px; /* 下外边距 */
-  font-size: 28px; /* 字体大小 */
+  font-size: 2.2rem;
+  color: #2c3e50;
+  text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.8);
+  padding: 15px 0;
+  border-bottom: 2px solid #1abc9c;
 }
 
 .date {
-  font-size: 16px; /* 日期字体大小 */
-  color: white; /* 日期颜色 */
+  font-size: 1.1rem;
+  color: #7f8c8d;
+  margin-left: 10px;
 }
 
-/* 刷新按钮样式 */
-.refresh-button {
-  font-size: 14px; /* 调整字体大小 */
-  padding: 5px 10px; /* 调整内边距 */
-  background-color: #1abc9c; /* 背景颜色 */
-  color: white; /* 文字颜色 */
-  border: none; /* 去掉边框 */
-  border-radius: 5px; /* 圆角 */
-  cursor: pointer; /* 鼠标指针样式 */
-  margin-bottom: 10px; /* 增加底部间距 */
-  transition: background-color 0.3s ease; /* 添加过渡效果 */
-}
-
-.refresh-button:hover {
-  background-color: #16a085; /* 悬停时颜色变化 */
-}
-
-/* 会议详情列表样式 */
-.meeting-details {
-  margin-top: 10px; /* 上外边距 */
-  flex-grow: 1; /* 允许扩展以填充容器 */
-  overflow-y: auto; /* 允许垂直滚动 */
-}
-
-.meeting-details h2 {
-  text-align: center; /* 标题居中 */
-  color: whitesmoke; /* 标题颜色 */
-  font-size: 24px; /* 字体大小 */
-  margin-bottom: 20px; /* 下外边距 */
-}
-
-/* 表格样式 */
+/* 增强表格视觉效果 */
 table {
-  width: 100%; /* 表格宽度 */
-  border-collapse: collapse; /* 合并边框 */
-  margin-bottom: 20px; /* 下外边距 */
+  border: 1px solid #ecf0f1;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 thead th {
-  background-color: #1abc9c; /* 表头背景颜色 */
-  color: white; /* 表头文字颜色 */
-  padding: 10px; /* 内边距 */
-  text-align: left; /* 左对齐 */
-}
-
-tbody td {
-  padding: 10px; /* 内边距 */
-  border-bottom: 1px solid #ddd; /* 下边框 */
+  background: linear-gradient(145deg, #1abc9c, #16a085);
+  font-weight: 600;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
 }
 
 tbody tr {
-  background-color: #f9f9f9; /* 行背景颜色 */
+  transition: background-color 0.2s;
 }
 
-/* 签到状态按钮样式 */
+tbody tr:nth-child(even) {
+  background-color: #f8f9fa;
+}
+
+tbody tr:hover {
+  background-color: #f1f8ff;
+}
+
+/* 优化按钮样式 */
 button {
-  padding: 10px 20px; /* 增加内边距 */
-  border: none; /* 去掉边框 */
-  border-radius: 8px; /* 增加圆角 */
-  cursor: pointer; /* 鼠标指针样式 */
-  color: white; /* 文字颜色设置为白色 */
-  font-weight: bold; /* 加粗文字 */
-  transition: background-color 0.3s ease, transform 0.2s ease; /* 添加平滑过渡效果 */
+  min-width: 80px;
+  padding: 8px 16px;
+  border-radius: 20px;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-/* 已签到状态 */
-.checked-in {
-  background-color: #2ecc71; /* 绿色已签到 */
+button.checked-in {
+  background: linear-gradient(145deg, #2ecc71, #27ae60);
 }
 
-.checked-in:hover {
-  background-color: #27ae60; /* 悬停时稍微加深绿色 */
-  transform: scale(1.05); /* 悬停时放大 */
+button:not(.checked-in) {
+  background: linear-gradient(145deg, #e74c3c, #c0392b);
 }
 
-/* 未签到状态 */
-.absent {
-  background-color: #e74c3c; /* 红色未签到 */
-}
-
-.absent:hover {
-  background-color: #c0392b; /* 悬停时稍微加深红色 */
-  transform: scale(1.05); /* 悬停时放大 */
-}
-
-/* 按钮的禁用状态 */
 button:disabled {
-  background-color: #95a5a6; /* 灰色禁用状态 */
-  cursor: not-allowed; /* 鼠标指针样式为不可用 */
+  background: linear-gradient(145deg, #95a5a6, #7f8c8d) !important;
+  cursor: not-allowed;
+  opacity: 0.7;
 }
 
-.no-meetings {
+button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* 新增加载状态样式 */
+.loading-text {
   text-align: center;
-  color: #e74c3c;
-  font-size: 18px;
-  margin-top: 20px;
-}
-
-/* 添加超时状态样式 */
-.timeout {
-    background-color: #95a5a6; /* 灰色表示超时 */
-    cursor: not-allowed;
-}
-
-.timeout:hover {
-    background-color: #95a5a6;
-    transform: none;
-}
-
-/* 修改按钮禁用状态样式 */
-button:disabled {
-    background-color: #95a5a6;
-    cursor: not-allowed;
-    opacity: 0.7;
-}
-
-button:disabled:hover {
-    transform: none;
+  color: #7f8c8d;
+  font-size: 1.1rem;
+  padding: 20px;
 }
 </style>
