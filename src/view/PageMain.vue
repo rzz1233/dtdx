@@ -71,7 +71,7 @@
 </template>
 
 <script>
-import apiClient from './api';
+// import apiClient from './api';
 
 export default {
   
@@ -121,29 +121,29 @@ export default {
       };
       return titles[path] || '会议管理系统';
     },
-    startStatusUpdateTimer() {
-      this.updateMeetingStatus();
+    // startStatusUpdateTimer() {
+    //   this.updateMeetingStatus();
       
-      this.statusUpdateTimer = setInterval(() => {
-        this.updateMeetingStatus();
-      }, 60000);
-    },
-    clearStatusUpdateTimer() {
-      if (this.statusUpdateTimer) {
-        clearInterval(this.statusUpdateTimer);
-        this.statusUpdateTimer = null;
-      }
-    },
-    async updateMeetingStatus() {
-      try {
-        const response = await apiClient.get('/api/meetinglist/update_meeting_status/');
-        if (response.data && response.data.updated_count > 0) {
-          console.log('会议状态更新成功:', response.data);
-        }
-      } catch (error) {
-        console.error('会议状态更新失败:', error.response?.data || error);
-      }
-    }
+    //   this.statusUpdateTimer = setInterval(() => {
+    //     this.updateMeetingStatus();
+    //   }, 60000);
+    // },
+    // clearStatusUpdateTimer() {
+    //   if (this.statusUpdateTimer) {
+    //     clearInterval(this.statusUpdateTimer);
+    //     this.statusUpdateTimer = null;
+    //   }
+    // },
+    // async updateMeetingStatus() {
+    //   try {
+    //     const response = await apiClient.get('/api/meetinglist/update_meeting_status/');
+    //     if (response.data && response.data.updated_count > 0) {
+    //       console.log('会议状态更新成功:', response.data);
+    //     }
+    //   } catch (error) {
+    //     console.error('会议状态更新失败:', error.response?.data || error);
+    //   }
+    // }
   }
 }
 </script>

@@ -47,13 +47,17 @@ export default {
 
       this.loading = true;
       try {
-        const response = await apiClient.post('/api/login1/', {
+        const response = await apiClient.post('/api/login/', {
+          username: this.username,
+          password: this.password,
+        });
+        const token = await apiClient.post('/api/token/', {
           username: this.username,
           password: this.password,
         });
 
-        localStorage.setItem('access_token', response.data.access);
-        localStorage.setItem('refresh_token', response.data.refresh);
+        localStorage.setItem('access_token', token.data.access);
+        localStorage.setItem('refresh_token', token.data.refresh);
         localStorage.setItem('is_superuser', response.data.is_superuser);
 
         if (response.data.is_superuser) {
